@@ -19,6 +19,15 @@ New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
 # Primero comprueba que Swagger y el documento esten accesibles.
 $swagger = Invoke-WebRequest -Uri "$base/" -UseBasicParsing -TimeoutSec 120
 if ($swagger.StatusCode -ne 200 -or $swagger.Content -notmatch 'swagger-ui') { throw 'No se encontro Swagger en la raiz.' }
+# El HTML solo no demuestra que Swagger funcione: validar tambien JavaScript y CSS.
+$assetMatches = [regex]::Matches($swagger.Content, '<(?:script|link)\b[^>]*\b(?:src|href)="([^"]+\.(?:js|css)(?:\?[^"\s]*)?)"')
+foreach ($assetMatch in $assetMatches) {
+    $assetUri = [Uri]::new([Uri]"$base/", $assetMatch.Groups[1].Value)
+    $asset = Invoke-WebRequest -Uri $assetUri -UseBasicParsing -TimeoutSec 120
+    if ($asset.StatusCode -ne 200 -or $asset.RawContentLength -eq 0) {
+        throw 'Un recurso JavaScript o CSS de Swagger no esta disponible.'
+    }
+}
 $spec = Invoke-RestMethod -Uri "$base/swagger/v1/swagger.json" -TimeoutSec 120
 $endpointCount = 0
 foreach ($path in $spec.paths.PSObject.Properties) {

@@ -36,8 +36,31 @@ if (app.Environment.IsDevelopment() && builder.Configuration["LocalDatabase:Enab
     app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("Frontend");
+// Evita reutilizar HTML o scripts de Swagger guardados durante un despliegue.
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? string.Empty;
+    if (path is "/" or "/index.html" or "/index.js" or "/index.css" ||
+        path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers.CacheControl = "no-store, no-cache, max-age=0";
+            context.Response.Headers.Pragma = "no-cache";
+            return Task.CompletedTask;
+        });
+    }
+    await next();
+});
 // Swagger se publica también en producción por requisito del laboratorio.
 app.UseSwagger();
+// Ruta alternativa con recursos propios para recuperar la interfaz sin cache previa.
+app.UseSwaggerUI(options =>
+{
+    options.DocumentTitle = "GymnasioDb - API de Gimnasio";
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "GymnasioDb - API de Gimnasio v1");
+    options.RoutePrefix = "swagger";
+});
 app.UseSwaggerUI(options =>
 {
     options.DocumentTitle = "GymnasioDb - API de Gimnasio";
