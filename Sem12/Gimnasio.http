@@ -1,0 +1,25 @@
+@Gymnasio_HostAddress = http://localhost:5001
+
+### Socios
+GET {{Gymnasio_HostAddress}}/api/socios
+Accept: application/json
+
+### Buscar socios
+GET {{Gymnasio_HostAddress}}/api/socios?buscar=Diego
+Accept: application/json
+
+### Membresias
+GET {{Gymnasio_HostAddress}}/api/membresias
+Accept: application/json
+
+### Filtro por plan
+GET {{Gymnasio_HostAddress}}/api/membresias?plan=Mensual
+Accept: application/json
+
+### Membresias de un socio
+GET {{Gymnasio_HostAddress}}/api/socios/1/membresias
+Accept: application/json
+
+### Socio inexistente
+GET {{Gymnasio_HostAddress}}/api/socios/2147483647
+Accept: application/json

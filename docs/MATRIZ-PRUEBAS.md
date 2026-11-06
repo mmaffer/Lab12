@@ -1,0 +1,46 @@
+# Matriz de solicitudes Postman
+
+Cada caso indica método, ruta y código esperado. Ejecutar en orden con Collection Runner.
+
+- **01 Crear socio** — `POST /api/socios` → **201**.
+- **02 Crear segundo socio** — `POST /api/socios` → **201**.
+- **03 Listar socios** — `GET /api/socios` → **200**.
+- **04 Filtro socios** — `GET /api/socios?buscar={{dni}}` → **200**.
+- **05 Obtener socio** — `GET /api/socios/{{socioId}}` → **200**.
+- **06 Membresias vacías de socio existente** — `GET /api/socios/{{socioId}}/membresias` → **200**.
+- **07 DNI duplicado POST** — `POST /api/socios` → **409**.
+- **08 Email duplicado POST** — `POST /api/socios` → **409**.
+- **09 Email mayúsculas duplicado** — `POST /api/socios` → **409**.
+- **10 DNI duplicado PUT** — `PUT /api/socios/{{otroSocioId}}` → **409**.
+- **11 Email duplicado PUT** — `PUT /api/socios/{{otroSocioId}}` → **409**.
+- **12 Actualizar socio** — `PUT /api/socios/{{socioId}}` → **204**.
+- **13 Comprobar actualización socio** — `GET /api/socios/{{socioId}}` → **200**.
+- **14 Socio inválido** — `POST /api/socios` → **400**.
+- **15 ID socio discordante** — `PUT /api/socios/{{socioId}}` → **400**.
+- **16 Crear membresia solo FK** — `POST /api/membresias` → **201**.
+- **17 Listar membresias con socio** — `GET /api/membresias` → **200**.
+- **18 Filtro por plan** — `GET /api/membresias?plan=mEnSuAl` → **200**.
+- **19 Obtener membresia** — `GET /api/membresias/{{membresiaId}}` → **200**.
+- **20 Ruta anidada** — `GET /api/socios/{{socioId}}/membresias` → **200**.
+- **21 Eliminar socio con membresias** — `DELETE /api/socios/{{socioId}}` → **409**.
+- **22 Actualizar membresia** — `PUT /api/membresias/{{membresiaId}}` → **204**.
+- **23 Comprobar actualización membresia** — `GET /api/membresias/{{membresiaId}}` → **200**.
+- **24 FK inexistente POST** — `POST /api/membresias` → **400**.
+- **25 FK inexistente PUT** — `PUT /api/membresias/{{membresiaId}}` → **400**.
+- **26 Duracion y precio invalidos** — `POST /api/membresias` → **400**.
+- **27 Plan de membresia obligatorio** — `POST /api/membresias` → **400**.
+- **28 Nombre socio demasiado largo** — `POST /api/socios` → **400**.
+- **29 ID membresia discordante** — `PUT /api/membresias/{{membresiaId}}` → **400**.
+- **30 socios GET inexistente** — `GET /api/socios/2147483647` → **404**.
+- **31 socios PUT inexistente** — `PUT /api/socios/2147483647` → **404**.
+- **32 socios DELETE inexistente** — `DELETE /api/socios/2147483647` → **404**.
+- **33 membresias GET inexistente** — `GET /api/membresias/2147483647` → **404**.
+- **34 membresias PUT inexistente** — `PUT /api/membresias/2147483647` → **404**.
+- **35 membresias DELETE inexistente** — `DELETE /api/membresias/2147483647` → **404**.
+- **36 Ruta anidada socio inexistente** — `GET /api/socios/2147483647/membresias` → **404**.
+- **37 Filtro sin resultados** — `GET /api/membresias?plan=SinCoincidencias{{runId}}` → **200**.
+- **38 Eliminar membresia** — `DELETE /api/membresias/{{membresiaId}}` → **204**.
+- **39 Membresia eliminada** — `GET /api/membresias/{{membresiaId}}` → **404**.
+- **40 Eliminar socio liberado** — `DELETE /api/socios/{{socioId}}` → **204**.
+- **41 Socio eliminado** — `GET /api/socios/{{socioId}}` → **404**.
+- **42 Eliminar segundo socio** — `DELETE /api/socios/{{otroSocioId}}` → **204**.

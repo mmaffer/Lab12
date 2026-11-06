@@ -1,0 +1,1129 @@
+{
+  "info": {
+    "name": "Semana 12 Gestión de Gimnasio",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar completa en orden sobre datos de laboratorio. Crea y elimina sus propios registros. No modifica los datos iniciales."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.info.requestName.startsWith('01 ')) {",
+          "const id=Date.now().toString()+Math.floor(Math.random()*100000);",
+          "const dni=String(10000000+Math.floor(Math.random()*80000000));",
+          "pm.collectionVariables.set('runId',id); pm.collectionVariables.set('dni',dni);",
+          "pm.collectionVariables.set('otroDni',String(Number(dni)+1));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Crear socio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Socio Postman\",\n  \"dni\": \"{{dni}}\",\n  \"telefono\": \"987654321\",\n  \"email\": \"gym-{{runId}}@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('socioId', pm.response.json().idSocio);",
+              "pm.test('Location del recurso', () => pm.expect(pm.response.headers.get('Location')).to.match(/api\\//i));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Crear segundo socio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Socio Postman\",\n  \"dni\": \"{{otroDni}}\",\n  \"telefono\": \"987654321\",\n  \"email\": \"otro-gym-{{runId}}@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('otroSocioId', pm.response.json().idSocio);",
+              "pm.test('Location del recurso', () => pm.expect(pm.response.headers.get('Location')).to.match(/api\\//i));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Listar socios",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Incluye socio creado', () => pm.expect(pm.response.json().some(x => x.idSocio === Number(pm.collectionVariables.get('socioId')))).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Filtro socios",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios?buscar={{dni}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Filtro DNI', () => pm.expect(pm.response.json().some(x => x.dni === pm.collectionVariables.get('dni'))).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Obtener socio",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/{{socioId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Membresias vacías de socio existente",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/{{socioId}}/membresias"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Colección vacía', () => pm.expect(pm.response.json()).to.eql([]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 DNI duplicado POST",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Socio Postman\",\n  \"dni\": \"{{dni}}\",\n  \"telefono\": \"987654321\",\n  \"email\": \"distinto-{{runId}}@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Email duplicado POST",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Socio Postman\",\n  \"dni\": \"12345678\",\n  \"telefono\": \"987654321\",\n  \"email\": \"gym-{{runId}}@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Email mayúsculas duplicado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Socio Postman\",\n  \"dni\": \"12345678\",\n  \"telefono\": \"987654321\",\n  \"email\": \"GYM-{{runId}}@EXAMPLE.COM\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 DNI duplicado PUT",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios/{{otroSocioId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Socio Postman\",\n  \"dni\": \"{{dni}}\",\n  \"telefono\": \"987654321\",\n  \"email\": \"otro-gym-{{runId}}@example.com\",\n  \"idSocio\": \"{{otroSocioId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Email duplicado PUT",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios/{{otroSocioId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Socio Postman\",\n  \"dni\": \"{{otroDni}}\",\n  \"telefono\": \"987654321\",\n  \"email\": \"gym-{{runId}}@example.com\",\n  \"idSocio\": \"{{otroSocioId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Actualizar socio",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios/{{socioId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Socio actualizado\",\n  \"dni\": \"{{dni}}\",\n  \"telefono\": \"987654321\",\n  \"email\": \"gym-{{runId}}@example.com\",\n  \"idSocio\": \"{{socioId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 204', () => pm.response.to.have.status(204));",
+              "pm.test('Sin cuerpo', () => pm.expect(pm.response.text()).to.eql(''));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Comprobar actualización socio",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/{{socioId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Nombre persistido', () => pm.expect(pm.response.json().nombre).to.eql('Socio actualizado'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Socio inválido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"\",\n  \"dni\": \"abc\",\n  \"telefono\": \"987654321\",\n  \"email\": \"invalido\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 ID socio discordante",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios/{{socioId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Socio Postman\",\n  \"dni\": \"{{dni}}\",\n  \"telefono\": \"987654321\",\n  \"email\": \"gym-{{runId}}@example.com\",\n  \"idSocio\": 0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Crear membresia solo FK",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/membresias",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"plan\": \"Mensual Postman\",\n  \"tipoAcceso\": \"Completo\",\n  \"turno\": \"Mañana\",\n  \"duracionMeses\": 1,\n  \"precio\": 120,\n  \"idSocio\": \"{{socioId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('membresiaId', pm.response.json().idMembresia);",
+              "pm.test('Location del recurso', () => pm.expect(pm.response.headers.get('Location')).to.match(/api\\//i));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 Listar membresias con socio",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/membresias"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Include sin ciclos', () => { const m=pm.response.json().find(x=>x.idMembresia===Number(pm.collectionVariables.get('membresiaId'))); pm.expect(m.socio.idSocio).to.eql(Number(pm.collectionVariables.get('socioId'))); pm.expect(m.socio).not.to.have.property('membresias'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Filtro por plan",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/membresias?plan=mEnSuAl"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Filtro sin distinción de mayúsculas', () => { pm.expect(pm.response.json().length).to.be.above(0); pm.response.json().forEach(m => pm.expect(m.plan.toLowerCase()).to.include('mensual')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Obtener membresia",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/membresias/{{membresiaId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Ruta anidada",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/{{socioId}}/membresias"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Membresia vinculada', () => pm.expect(pm.response.json().some(x=>x.idMembresia===Number(pm.collectionVariables.get('membresiaId')))).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Eliminar socio con membresias",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/{{socioId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Actualizar membresia",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/membresias/{{membresiaId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"plan\": \"Mensual actualizado\",\n  \"tipoAcceso\": \"Completo\",\n  \"turno\": \"Mañana\",\n  \"duracionMeses\": 1,\n  \"precio\": 159.9,\n  \"idSocio\": \"{{socioId}}\",\n  \"idMembresia\": \"{{membresiaId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 204', () => pm.response.to.have.status(204));",
+              "pm.test('Sin cuerpo', () => pm.expect(pm.response.text()).to.eql(''));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 Comprobar actualización membresia",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/membresias/{{membresiaId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Precio persistido', () => pm.expect(pm.response.json().precio).to.eql(159.90));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 FK inexistente POST",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/membresias",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"plan\": \"Mensual Postman\",\n  \"tipoAcceso\": \"Completo\",\n  \"turno\": \"Mañana\",\n  \"duracionMeses\": 1,\n  \"precio\": 120,\n  \"idSocio\": 2147483647\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 FK inexistente PUT",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/membresias/{{membresiaId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"plan\": \"Mensual Postman\",\n  \"tipoAcceso\": \"Completo\",\n  \"turno\": \"Mañana\",\n  \"duracionMeses\": 1,\n  \"precio\": 120,\n  \"idSocio\": 2147483647,\n  \"idMembresia\": \"{{membresiaId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 Duracion y precio invalidos",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/membresias",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"plan\": \"Mensual Postman\",\n  \"tipoAcceso\": \"Completo\",\n  \"turno\": \"Mañana\",\n  \"duracionMeses\": 0,\n  \"precio\": 100000,\n  \"idSocio\": \"{{socioId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27 Plan de membresia obligatorio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/membresias",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"plan\": \"\",\n  \"tipoAcceso\": \"Completo\",\n  \"turno\": \"Mañana\",\n  \"duracionMeses\": 1,\n  \"precio\": 120,\n  \"idSocio\": \"{{socioId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28 Nombre socio demasiado largo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n  \"dni\": \"{{dni}}\",\n  \"telefono\": \"987654321\",\n  \"email\": \"gym-{{runId}}@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "29 ID membresia discordante",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/membresias/{{membresiaId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"plan\": \"Mensual Postman\",\n  \"tipoAcceso\": \"Completo\",\n  \"turno\": \"Mañana\",\n  \"duracionMeses\": 1,\n  \"precio\": 120,\n  \"idSocio\": \"{{socioId}}\",\n  \"idMembresia\": 0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "30 socios GET inexistente",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/2147483647"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "31 socios PUT inexistente",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/socios/2147483647",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Socio Postman\",\n  \"dni\": \"{{dni}}\",\n  \"telefono\": \"987654321\",\n  \"email\": \"gym-{{runId}}@example.com\",\n  \"idSocio\": 2147483647\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "32 socios DELETE inexistente",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/2147483647"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "33 membresias GET inexistente",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/membresias/2147483647"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "34 membresias PUT inexistente",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/membresias/2147483647",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"plan\": \"Mensual Postman\",\n  \"tipoAcceso\": \"Completo\",\n  \"turno\": \"Mañana\",\n  \"duracionMeses\": 1,\n  \"precio\": 120,\n  \"idSocio\": \"{{socioId}}\",\n  \"idMembresia\": 2147483647\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "35 membresias DELETE inexistente",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/membresias/2147483647"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "36 Ruta anidada socio inexistente",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/2147483647/membresias"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "37 Filtro sin resultados",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/membresias?plan=SinCoincidencias{{runId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Lista vacía', () => pm.expect(pm.response.json()).to.eql([]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "38 Eliminar membresia",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/membresias/{{membresiaId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 204', () => pm.response.to.have.status(204));",
+              "pm.test('Sin cuerpo', () => pm.expect(pm.response.text()).to.eql(''));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "39 Membresia eliminada",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/membresias/{{membresiaId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "40 Eliminar socio liberado",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/{{socioId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 204', () => pm.response.to.have.status(204));",
+              "pm.test('Sin cuerpo', () => pm.expect(pm.response.text()).to.eql(''));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "41 Socio eliminado",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/{{socioId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "42 Eliminar segundo socio",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/socios/{{otroSocioId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 204', () => pm.response.to.have.status(204));",
+              "pm.test('Sin cuerpo', () => pm.expect(pm.response.text()).to.eql(''));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
